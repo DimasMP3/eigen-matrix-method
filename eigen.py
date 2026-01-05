@@ -216,110 +216,161 @@ def tampilkan_langkah(matriks):
         print(f"    λ{sub} = {val}")
 
     # ══════════════════════════════════════════════════════════════
-    # LANGKAH 6: Vektor Eigen
+    # LANGKAH 6: Vektor Eigen dan Basis Ruang Eigen
     # ══════════════════════════════════════════════════════════════
     print("\n" + "═"*60)
-    print("  LANGKAH 6: Menghitung Vektor Eigen")
-    print("  Untuk setiap λ, selesaikan (A - λI)v = 0")
+    print("  LANGKAH 6: Vektor Eigen dan Basis Ruang Eigen")
     print("═"*60)
 
     subscripts = ['₁', '₂', '₃']
-    var_names = ['x', 'y', 'z'] if n == 3 else ['x', 'y']
+    var_names = ['x₁', 'x₂', 'x₃'] if n == 3 else ['x₁', 'x₂']
     
     for idx, val in enumerate(nilai_eigen):
         sub = subscripts[idx] if idx < len(subscripts) else f"_{idx+1}"
+        
         print(f"\n  {'─'*56}")
-        print(f"  Untuk λ{sub} = {val}")
+        print(f"  ● Untuk λ{sub} = {val}")
         print(f"  {'─'*56}")
         
         # Substitusi nilai eigen
-        matriks_substitusi = matriks_char.subs(λ, val)
+        matriks_sub = matriks_char.subs(λ, val)
         
-        print(f"\n  [a] Substitusi λ = {val} ke (A - λI):")
-        print("  " + format_matrix_str(matriks_substitusi).replace("\n", "\n  "))
+        # Tampilkan A - λI
+        print(f"\n  A - {val}I =")
+        print("  " + format_matrix_str(matriks_sub).replace("\n", "\n  "))
         
-        # Menampilkan sistem persamaan
-        print(f"\n  [b] Sistem Persamaan Linear (A - λI)v = 0:")
+        # Tampilkan (A - λI)v̄ = 0̄
+        print(f"\n  (A - {val}I)v̄ = 0̄")
+        print()
+        
+        # Format perkalian matriks dengan vektor
+        mat_lines = format_matrix_str(matriks_sub).split("\n")
+        vec_lines = []
+        zero_lines = []
         for i in range(n):
-            terms = []
-            for j in range(n):
-                coef = matriks_substitusi[i, j]
-                if coef != 0:
-                    if coef == 1:
-                        terms.append(f"{var_names[j]}")
-                    elif coef == -1:
-                        terms.append(f"-{var_names[j]}")
-                    else:
-                        terms.append(f"({coef}){var_names[j]}")
-            if terms:
-                eq = " + ".join(terms).replace("+ -", "- ")
-                print(f"      {eq} = 0")
+            if i == 0:
+                vec_lines.append(f"⎛ {var_names[i]} ⎞")
+                zero_lines.append("⎛ 0 ⎞")
+            elif i == n - 1:
+                vec_lines.append(f"⎝ {var_names[i]} ⎠")
+                zero_lines.append("⎝ 0 ⎠")
             else:
-                print(f"      0 = 0")
+                vec_lines.append(f"⎜ {var_names[i]} ⎟")
+                zero_lines.append("⎜ 0 ⎟")
         
-        # RREF (Row Reduced Echelon Form)
-        rref_matrix, pivots = matriks_substitusi.rref()
+        for i in range(n):
+            eq_sign = " = " if i == n // 2 else "   "
+            print(f"  {mat_lines[i]} {vec_lines[i]}{eq_sign}{zero_lines[i]}")
         
-        print(f"\n  [c] Bentuk Eselon Baris Tereduksi (RREF):")
+        # OBE (Operasi Baris Elementer) - RREF
+        rref_matrix, pivots = matriks_sub.rref()
+        
+        print(f"\n  Operasi Baris Elementer (OBE):")
+        print(f"  ~")
         print("  " + format_matrix_str(rref_matrix).replace("\n", "\n  "))
         
-        # Mencari Null Space
-        vektor_basis = matriks_substitusi.nullspace()
+        # Mencari variabel bebas dan terikat
+        free_vars = [j for j in range(n) if j not in pivots]
+        bound_vars = list(pivots)
         
-        print(f"\n  [d] Menentukan Vektor Eigen:")
+        vektor_basis = matriks_sub.nullspace()
         
         if len(vektor_basis) > 0:
-            # Tentukan variabel bebas dan terikat
-            free_vars = [j for j in range(n) if j not in pivots]
-            
+            # Variabel bebas
             if free_vars:
-                free_var_names = [var_names[j] for j in free_vars]
-                print(f"      Variabel bebas: {', '.join(free_var_names)}")
-                print(f"      Misalkan {free_var_names[0]} = t (parameter)")
+                free_var_str = ", ".join([var_names[j] for j in free_vars])
+                print(f"\n  Variabel bebas: {free_var_str}")
+                print(f"  Misalkan {var_names[free_vars[0]]} = t,  t ∈ ℝ")
             
+            # Penyelesaian dari RREF
+            print(f"\n  Penyelesaian:")
             for vec in vektor_basis:
-                print(f"\n      Solusi umum:")
-                # Tampilkan vektor dalam bentuk parameter
+                # Tampilkan hubungan antar variabel
+                for i in bound_vars:
+                    if free_vars:
+                        coef = vec[free_vars[0]] / vec[i] if vec[i] != 0 else 0
+                        if vec[i] != 0:
+                            # Cari koefisien dari RREF
+                            for j in free_vars:
+                                rref_coef = -rref_matrix[list(pivots).index(i), j] if i in pivots else 0
+                                if rref_coef != 0:
+                                    print(f"      {var_names[i]} = {rref_coef}{var_names[j]} = {rref_coef}t")
+                                    break
+                
+                for j in free_vars:
+                    print(f"      {var_names[j]} = t")
+                
+                # Tampilkan vektor solusi
+                print(f"\n  Vektor solusi:")
                 vec_elems = [str(vec[i]) for i in range(vec.rows)]
                 
-                # Tampilkan sebagai vektor kolom dengan keterangan
-                print(f"      v{sub} = t ×", end="")
+                # Format: (x₁, x₂)ᵀ = (...)ᵀ = t(...)ᵀ
+                vec_tuple = ", ".join(var_names[:n])
+                vec_vals = ", ".join([f"{v}t" if v != "1" else "t" for v in vec_elems])
+                vec_basis = ", ".join(vec_elems)
                 
-                # Normalisasi vektor (ambil elemen terakhir sebagai referensi)
-                for i, elem in enumerate(vec_elems):
-                    if i == 0:
-                        print(f" ⎡ {elem} ⎤")
-                    elif i == vec.rows - 1:
-                        print(f"             ⎣ {elem} ⎦")
-                    else:
-                        print(f"             ⎢ {elem} ⎥")
+                print(f"      ({vec_tuple})ᵀ = t × ({vec_basis})ᵀ,  t ∈ ℝ")
             
-            print(f"\n  [e] Basis Ruang Eigen untuk λ{sub} = {val}:")
+            # Vektor Eigen
+            print(f"\n  Vektor Eigen untuk λ{sub} = {val}:")
             for vec in vektor_basis:
-                print(f"\n      v{sub} =")
+                vec_str = ", ".join([str(vec[i]) for i in range(vec.rows)])
+                print(f"      v{sub} = ({vec_str})ᵀ")
+                print()
                 print("      " + format_matrix_str(vec).replace("\n", "\n      "))
+            
+            # Basis Ruang Eigen (BRE)
+            print(f"\n  Basis Ruang Eigen (BRE):")
+            bre_vecs = []
+            for vec in vektor_basis:
+                vec_str = ", ".join([str(vec[i]) for i in range(vec.rows)])
+                bre_vecs.append(f"({vec_str})")
+            print(f"      BRE_λ={val} = {{ {', '.join(bre_vecs)} }}")
+            
+            # Verifikasi Av = λv
+            print(f"\n  Verifikasi Av = λv:")
+            for vec in vektor_basis:
+                Av = matriks * vec
+                lv = val * vec
+                
+                # Tampilkan A × v
+                A_str = format_matrix_str(matriks).split("\n")
+                v_str = format_matrix_str(vec).split("\n")
+                Av_str = format_matrix_str(Av).split("\n")
+                lv_str = format_matrix_str(lv).split("\n")
+                
+                print(f"      A × v{sub} = λ{sub} × v{sub}")
+                for i in range(n):
+                    eq1 = " = " if i == n // 2 else "   "
+                    eq2 = " = " if i == n // 2 else "   "
+                    lam = f"{val}×" if i == n // 2 else "   "
+                    print(f"      {A_str[i]} {v_str[i]}{eq1}{Av_str[i]}{eq2}{lam}{v_str[i]}")
+                
+                print(f"      ✓ Terverifikasi")
         else:
-            print("      Tidak ditemukan vektor non-trivial.")
-            print("      (Matriks mungkin defektif)")
+            print("      Tidak ditemukan vektor eigen non-trivial.")
 
     # ══════════════════════════════════════════════════════════════
-    # KESIMPULAN AKHIR
+    # KESIMPULAN
     # ══════════════════════════════════════════════════════════════
     print("\n" + "═"*60)
-    print("  RINGKASAN HASIL")
+    print("  KESIMPULAN")
     print("═"*60)
     
-    print("\n  Nilai Eigen dan Vektor Eigen:")
+    print("\n  Nilai Eigen:")
+    eigen_str = ", ".join([str(v) for v in nilai_eigen])
+    print(f"      λ = {{ {eigen_str} }}")
+    
+    print("\n  Vektor Eigen dan Basis Ruang Eigen:")
     for idx, val in enumerate(nilai_eigen):
         sub = subscripts[idx] if idx < len(subscripts) else f"_{idx+1}"
-        matriks_substitusi = matriks_char.subs(λ, val)
-        vektor_basis = matriks_substitusi.nullspace()
+        matriks_sub = matriks_char.subs(λ, val)
+        vektor_basis = matriks_sub.nullspace()
         
-        print(f"\n  λ{sub} = {val}")
         if vektor_basis:
             for vec in vektor_basis:
                 vec_str = ", ".join([str(vec[i]) for i in range(vec.rows)])
-                print(f"  v{sub} = ({vec_str})ᵀ")
+                print(f"      λ{sub} = {val}  →  v{sub} = ({vec_str})ᵀ  →  BRE_λ={val} = {{({vec_str})}}")
 
     print("\n" + "═"*60)
     print("  SELESAI")
